@@ -1,0 +1,20 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Supports et rapports de travail : gardés en local, pas dans le dépôt
+*.docx
+*.pptx
+*.pdf
+*.exe
+
+# Notes de terminal et fichiers de travail.
+# Attention : certains contiennent des identifiants du lab.
+*.txt
+!requirements.txt
+
+# Pages HTML de travail (tableaux de préparation, tests)
+test.html
+tableau_choix_cia_compact.html
+SANTELab_*.html
