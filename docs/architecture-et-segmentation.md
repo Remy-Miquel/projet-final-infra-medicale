@@ -19,6 +19,18 @@ topologie physique réaliste plutôt qu'un simple réseau à plat.
 
 ## Vue d'ensemble
 
+![Topologie GNS3 du cabinet médical ATCHOUM](images/topologie-gns3.png)
+
+La maquette complète : les deux sites, les commutateurs SW-DMZ et SW-APP, les trois
+routeurs Cisco IOU (cabinet, admin, cabinet2), les deux pfSense reliés par le tunnel VPN
+(en jaune), l'Active Directory, le serveur Wazuh, l'archivage OVH et le poste Kali utilisé
+pour les tests.
+
+> L'adressage des segments applicatif et données a évolué après ce schéma. Les adresses de
+> référence sont celles du tableau plus bas.
+
+Schématiquement :
+
 ```
         SITE 1 — Cabinet principal              SITE 2 — Antenne
      ┌──────────────────────────────┐     ┌──────────────────────────┐
@@ -97,19 +109,37 @@ santé qui circulent entre deux sites.
 ## Identité et contrôle d'accès
 
 Un domaine Active Directory (`cm.local`) centralise les identités — un compte, un rôle, un
-seul point de vérité. Le contrôle d'accès applicatif repose sur trois rôles (médecin,
-secrétariat, patient), vérifiés côté serveur à chaque requête :
+seul point de vérité. Les utilisateurs sont rangés par unité d'organisation selon leur
+fonction :
+
+![Structure du domaine Active Directory](images/domaine-active-directory.png)
+
+Les postes Linux rejoignent le domaine via SSSD et realmd. L'authentification a été validée
+pour les trois profils :
+
+![Authentification Active Directory testée et validée](images/authentification-ad-validee.png)
+
+Côté application, le contrôle d'accès repose sur trois rôles vérifiés côté serveur à chaque
+requête :
+
+![Matrice des droits par rôle](images/matrice-rbac.png)
 
 | Action | patient | secrétariat | médecin |
 |---|:---:|:---:|:---:|
-| connexion | ✓ | ✓ | ✓ |
-| son propre dossier | ✓ | ✗ | ✓ |
+| connexion (JWT) | ✓ | ✓ | ✓ |
+| voir son propre dossier | ✓ | ✗ | ✓ (tous) |
 | liste des patients | ✗ | ✓ (administratif) | ✓ (complet) |
-| contenu clinique | ✗ | ✗ | ✓ |
+| contenu médical | son dossier uniquement | ✗ | ✓ |
+| prise de rendez-vous | ✓ | ✓ | ✓ |
 
 Le contrôle est serveur, jamais client : on ne peut pas le contourner depuis le navigateur.
 
 ## Choix techniques
+
+Chaque brique a été retenue pour ce qu'elle apporte aux trois piliers — confidentialité,
+intégrité, disponibilité :
+
+![Choix techniques et piliers CIA](images/choix-techniques-cia.png)
 
 | Composant | Choix | Pourquoi |
 |---|---|---|

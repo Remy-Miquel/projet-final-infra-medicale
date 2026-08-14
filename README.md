@@ -22,6 +22,8 @@ d'intrusion sur l'infrastructure de l'équipe adverse dans le cadre de l'exercic
 
 ## L'architecture en bref
 
+![Topologie GNS3 du cabinet médical ATCHOUM](docs/images/topologie-gns3.png)
+
 Deux sites reliés par un tunnel IPsec entre deux pfSense. Côté site principal, une
 architecture 3-tiers où chaque étage vit dans sa propre zone réseau :
 
@@ -67,10 +69,11 @@ Contrôle d'accès à trois rôles, vérifié côté serveur à chaque requête 
 
 | Action | patient | secrétariat | médecin |
 |---|:---:|:---:|:---:|
-| connexion | ✓ | ✓ | ✓ |
-| son propre dossier | ✓ | ✗ | ✓ |
+| connexion (JWT) | ✓ | ✓ | ✓ |
+| voir son propre dossier | ✓ | ✗ | ✓ (tous) |
 | liste des patients | ✗ | ✓ (administratif) | ✓ (complet) |
-| contenu clinique | ✗ | ✗ | ✓ |
+| contenu médical | son dossier uniquement | ✗ | ✓ |
+| prise de rendez-vous | ✓ | ✓ | ✓ |
 
 ## Déploiement
 
