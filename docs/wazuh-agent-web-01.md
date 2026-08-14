@@ -48,7 +48,7 @@ sudo systemctl start wazuh-agent
 
 ## 4. Problèmes rencontrés
 
-Trois blocages avant que l'agent s'enregistre correctement.
+Quatre blocages avant que l'agent s'enregistre correctement.
 
 **Version d'agent incompatible.** Le serveur renvoyait `ERROR: Incompatible version for
 new agent` et l'enregistrement échouait en boucle. L'agent installé par défaut était en
@@ -65,6 +65,33 @@ machines du lab portaient le nom d'hôte `debian` par défaut, y compris le serv
 qui refuse un agent homonyme. Résolu en attribuant un nom explicite via
 `<enrollment><agent_name>`, en supprimant l'ancienne clé dans `client.keys`, puis en
 redémarrant. L'enregistrement passe alors : `Agent key generated for WEB-01`.
+
+**Disque plein.** L'agent démarrait puis mourait aussitôt, avec une unité systemd en échec
+(`wazuh-agentd did not start`). La cause était ailleurs que dans Wazuh — le disque de WEB-01
+était saturé, et l'agent ne pouvait plus écrire son fichier PID :
+
+```
+2026/07/30 14:53:16 wazuh-agentd: ERROR: Could not write PID file
+    'var/run/wazuh-agentd-7942.pid': No space left on device (28)
+2026/07/30 14:53:16 wazuh-agentd: CRITICAL: (1212): Unable to create PID file.
+```
+
+Quatre tentatives de relance ont produit exactement la même trace avant que je regarde
+l'espace disque plutôt que la configuration de l'agent. Le nettoyage du cache pip et des
+paquets apt a suffi. La leçon vaut d'être notée : le message d'erreur de systemd (« le
+service n'a pas démarré ») ne dit rien de la cause réelle, il faut descendre dans
+`/var/ossec/logs/ossec.log`.
+
+**Filtres journald désactivés silencieusement.** Un avertissement facile à rater :
+
+```
+wazuh-logcollector: WARNING: (8022): The filters of the journald log will be disabled
+    in the merge, because one of the configuration does not have filters.
+```
+
+Si un seul bloc `<localfile>` de type journald est déclaré sans filtre, Wazuh désactive les
+filtres de **tous** les blocs journald à la fusion. La collecte remonte alors l'intégralité
+du journal au lieu des seules unités `ssh` et `sudo`.
 
 ## 5. Journaux collectés
 
