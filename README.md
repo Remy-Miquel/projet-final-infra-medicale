@@ -65,6 +65,8 @@ web-01-frontend/    frontend Flask — pages, session, jeton
 sql/                schéma de la base et script de peuplement
 ```
 
+![Portail du cabinet, session ouverte avec le rôle médecin](docs/images/portail-vue-medecin.png)
+
 Contrôle d'accès à trois rôles, vérifié côté serveur à chaque requête :
 
 | Action | patient | secrétariat | médecin |

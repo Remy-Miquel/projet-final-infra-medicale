@@ -22,12 +22,9 @@ topologie physique réaliste plutôt qu'un simple réseau à plat.
 ![Topologie GNS3 du cabinet médical ATCHOUM](images/topologie-gns3.png)
 
 La maquette complète : les deux sites, les commutateurs SW-DMZ et SW-APP, les trois
-routeurs Cisco IOU (cabinet, admin, cabinet2), les deux pfSense reliés par le tunnel VPN
-(en jaune), l'Active Directory, le serveur Wazuh, l'archivage OVH et le poste Kali utilisé
-pour les tests.
-
-> L'adressage des segments applicatif et données a évolué après ce schéma. Les adresses de
-> référence sont celles du tableau plus bas.
+routeurs Cisco IOU (cabinet, admin, cabinet2), les deux pfSense reliés par le tunnel VPN,
+l'Active Directory, le serveur Wazuh, l'archivage OVH et le poste Kali utilisé pour les
+tests.
 
 Schématiquement :
 
@@ -84,6 +81,27 @@ tout le reste est bloqué. Concrètement, le poste ADMIN joint les serveurs en S
 les postes utilisateurs joignent WEB-01, les agents Wazuh remontent vers le manager — et
 rien d'autre n'est ouvert par défaut.
 
+Sur la DMZ, WEB-01 ne peut sortir que vers trois destinations précises — l'API sur 8443,
+le serveur Wazuh sur 1514-1515, et HTTPS/DNS vers l'extérieur — puis une règle de blocage
+explicite l'empêche d'atteindre les réseaux internes :
+
+![Règles de filtrage de la DMZ sur pfSense](images/regles-pfsense-dmz.png)
+
+Même logique sur le segment applicatif : APP-01 atteint PostgreSQL sur 5432, sort en HTTPS
+et DNS, et rien d'autre.
+
+![Règles de filtrage du segment applicatif](images/regles-pfsense-app-01.png)
+
+Côté routeurs IOU, les ACL sont vérifiées depuis un poste utilisateur — c'est la seule
+façon de savoir si la politique écrite est réellement appliquée :
+
+![Validation des ACL depuis le poste Secrétaire](images/validation-acl-iou.png)
+
+Le poste secrétariat atteint bien le portail web et l'Active Directory, mais ses paquets
+vers la base de données et vers l'API reviennent en
+`ICMP type 3 code 13 — Communication administratively prohibited`, émis par le routeur.
+C'est la signature d'un refus d'ACL : le cloisonnement tient.
+
 L'audit croisé a montré que cette politique avait un trou : depuis le poste Médecin2 du
 site 2, la base de données et l'interface d'administration pfSense répondaient au ping.
 C'est le finding F7, détaillé dans
@@ -100,8 +118,12 @@ qui — les deux sites sont reliés par un tunnel IPsec entre les deux pfSense.
   SHA-256 pour l'intégrité. Plusieurs paires Phase 2 ont été définies pour couvrir les
   différents segments à faire communiquer.
 
+![Configuration du tunnel IPsec inter-sites](images/vpn-ipsec-configuration.png)
+
 Trois flux ont été validés de bout en bout : admin vers IT2, utilisateurs vers WEB-01, et
-supervision vers Wazuh.
+supervision vers Wazuh. Le tunnel monte et reste établi :
+
+![Statut du tunnel IPsec — Established](images/vpn-ipsec-etabli.png)
 
 Le chiffrement en transit n'est pas un confort ici : le RGPD l'impose pour des données de
 santé qui circulent entre deux sites.
